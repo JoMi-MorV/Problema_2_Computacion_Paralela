@@ -11,6 +11,13 @@ from src.T1_preprocesamiento.F2_tratamiento_csv import (
     busca_nulos,
     limpiar_nulos
 )
+from src.T1_preprocesamiento.F3_transformacion_datos_csv import crear_variables_deducidas
+from src.T1_preprocesamiento.F4_tratamiento_variables_deducidas import (
+    validar_deducidas,
+    busca_nulos_deducidas,
+    limpiar_nulos_deducidos,
+    normalizar_variables
+)
 
 # main.py
 # Ejecución secuencial del pipeline de preprocesamiento.
@@ -33,11 +40,25 @@ log(f"En '{archivo_csv}' hay {df.shape[0].compute()} registros.")
 # 2. Validación y coerción de tipos básicas.
 df = validar_datos(df)
 
-# 3. Auditoría de nulos antes de limpieza.
+# 4. Auditoría de nulos antes de limpieza.
 busca_nulos(df)
 
-# 4. Limpieza de variables básicas.
+# 5. Limpieza de variables básicas.
 df = limpiar_nulos(df)
 log(f"Después de limpieza básica hay {df.shape[0].compute()} registros.")
+
+# 6. Ingeniería de características: variables deducidas.
+df = crear_variables_deducidas(df)
+log("Variables deducidas creadas exitosamente.")
+
+# 7. Validación de las variables derivadas.
+df = validar_deducidas(df)
+
+# 8. Auditoría de nulos en variables derivadas.
+busca_nulos_deducidas(df)
+
+# 9. Limpieza de variables derivadas.
+df = limpiar_nulos_deducidos(df)
+log(f"Después de limpieza de variables deducidas hay {df.shape[0].compute()} registros.")
 
 log("Pipeline completado. Estado final del dataset listo para el análisis.")

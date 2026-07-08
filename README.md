@@ -24,6 +24,8 @@ proyecto/
 │  ├── T1_preprocesamiento/
 │  │    ├── F1_carga_csv.py
 │  │    ├── F2_tratamiento_csv.py
+│  │    ├── F3_transformacion_datos_csv.py
+│  │    └── F4_tratamiento_variables_deducidas.py
 │ 
 ├── utiles/
 │  └── logger.py
@@ -57,8 +59,37 @@ Este módulo aplica transformación y validación a las columnas básicas del da
 - Analizar valores nulos en grupos de columnas.
 - Limpiar nulos según umbrales: eliminación, imputación o descarte de columna.
 
+### 3. `F3_transformacion_datos_csv.py` (Variables deducidas)
 
-### 3. `main.py` (Orquestador del pipeline)
+Este módulo genera nuevas variables derivadas del dataset original, preservando el paralelismo de Dask.
+
+#### Responsabilidades
+
+- Calcular `MONTO_POR_UNIDAD`.
+- Extraer `EDAD` y `HORA_TRANSACCION` de fechas.
+- Calcular `FRECUENCIA_COMPRA` con `groupby()` y `merge()`.
+- Calcular `RECENCIA`, `MONTO_BRUTO` y `ES_FIN_DE_SEMANA`.
+- Segmentar `MONTO APLICADO` en `SEGMENTO_MONTO`.
+
+### 4. `F4_tratamiento_variables_deducidas.py` (Validación, limpieza y normalización de variables derivadas)
+
+Este módulo valida, limpia y normaliza las columnas generadas en `F3`, manteniendo el uso eficiente de memoria con Dask.
+
+#### Responsabilidades
+
+- Coercer variables numéricas derivadas.
+- Aplicar reglas de dominio para `EDAD`, `MONTO_BRUTO` y `FRECUENCIA_COMPRA`.
+- Validar valores booleanos y categorías esperadas.
+- Medir y limpiar nulos en las columnas derivadas.
+- Normalizar variables derivadas relevantes para análisis posteriores.
+
+#### Normalización
+
+- Se utiliza una estandarización tipo `StandardScaler`.
+- Cada variable derivada se transforma con `(valor - media) / desviación_estándar`.
+- Se documentan los parámetros de normalización: media y desviación estándar.
+
+### 5. `main.py` (Orquestador del pipeline)
 
 Este script ahora ejecuta el flujo completo con análisis antes y después de cada limpieza:
 
@@ -66,6 +97,10 @@ Este script ahora ejecuta el flujo completo con análisis antes y después de ca
 2. Validar los datos básicos.
 3. Auditoría de nulos básicos.
 4. Limpieza de variables básicas.
+5. Generar variables deducidas.
+6. Validar variables deducidas.
+7. Auditoría de nulos en variables deducidas.
+8. Limpieza de variables deducidas.
 
 #### Responsabilidades
 
