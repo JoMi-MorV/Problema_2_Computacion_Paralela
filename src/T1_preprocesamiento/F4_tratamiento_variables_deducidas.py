@@ -1,6 +1,8 @@
 from utiles.logger import log  ##comentario importa el logger para emitir mensajes
 import dask.dataframe as dd  ##comentario Dask para manipular el dataframe grande de forma perezosa
 import numpy as np  ##comentario Numpy para operaciones numéricas y NaN
+import os
+import json
 
 # F4_tratamiento_variables_deducidas.py
 # Validación y limpieza de las variables derivadas que se generan en F3.
@@ -13,6 +15,7 @@ NORMALIZAR_COLUMNAS = [
 
 
 def validar_deducidas(df):
+    """Valida y corrige reglas de dominio sobre las variables derivadas."""
     log("===== VALIDACIÓN DE VARIABLES DEDUCIDAS =====")  ##comentario inicio de la validación de variables derivadas
 
     cols_num = ['MONTO_POR_UNIDAD', 'EDAD', 'HORA_TRANSACCION',
@@ -50,6 +53,7 @@ def validar_deducidas(df):
 
 
 def busca_nulos_deducidas(df):
+    """Registra los nulos de las variables deducidas para decidir la estrategia de limpieza."""
     log("===== ANÁLISIS DE NULOS EN VARIABLES DEDUCIDAS =====")  ##comentario inicio del análisis de nulos en variables derivadas
 
     columnas_deducidas = [
@@ -85,6 +89,7 @@ def _mediana_aproximada(df, col):
 
 
 def limpiar_nulos_deducidos(df):
+    """Limpia los nulos de las variables deducidas según porcentaje y tipo de columna."""
     log("===== PROCESANDO ESTRATEGIA ESTRATIFICADA DE VARIABLES DEDUCIDAS =====")  ##comentario inicio de la limpieza de variables derivadas
 
     columnas_deducidas = [
@@ -129,7 +134,8 @@ def limpiar_nulos_deducidos(df):
     return df  ##comentario devuelve DataFrame limpio
 
 
-def normalizar_variables(df):
+def normalizar_variables(df, output_dir='output/preprocesamiento/modelos'):
+    """Estandariza las variables derivadas y guarda los parámetros usados en un JSON."""
     log("===== NORMALIZACIÓN DE VARIABLES DEDUCIDAS =====")  ##comentario inicio de la normalización para análisis posteriores
     parametros = {}  ##comentario almacena medias y desviaciones usadas
 
@@ -145,8 +151,17 @@ def normalizar_variables(df):
 
         nombre_escalado = f"{col}_SCALED"  ##comentario nombre de la nueva columna escalada
         df[nombre_escalado] = (df[col] - media) / desviacion  ##comentario aplica estandarización tipo StandardScaler
-        parametros[col] = {'media': media, 'desviacion': desviacion}  ##comentario guarda parámetros utilizados
+        parametros[col] = {'media': float(media), 'desviacion': float(desviacion)}  ##comentario guarda parámetros utilizados
         log(f"{col}: normalizado con media={media:.4f} y std={desviacion:.4f}.")  ##comentario registra los parámetros de escalado
+
+    os.makedirs(output_dir, exist_ok=True)
+    ruta_parametros = os.path.join(output_dir, 'parametros_normalizacion.json')
+    try:
+        with open(ruta_parametros, 'w', encoding='utf-8') as f:
+            json.dump(parametros, f, indent=2, ensure_ascii=False)
+        log(f"Parámetros de normalización guardados en {ruta_parametros}")
+    except Exception as e:
+        log(f"No se pudieron guardar los parámetros de normalización: {e}")
 
     log("Normalización completada con parámetros fijos.")  ##comentario fin de la normalización
     return df  ##comentario devuelve el DataFrame con columnas escaladas

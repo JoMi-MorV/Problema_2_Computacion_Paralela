@@ -1,8 +1,9 @@
 from utiles.logger import log  ##comentario logger para registrar mensajes y métricas
 import dask.dataframe as dd  ##comentario Dask DataFrame se usa para manipular datos grandes en paralelo
 import numpy as np  ##comentario Numpy se usa para funciones numéricas y NaN
+from utiles.semilla import set_global_seed
 
-SEMILLA_ALEATORIEDAD = 42  ##comentario semilla fija para cualquier proceso aleatorio futuro
+# Semilla centralizada via CPYD_SEED
 
 # F2_tratamiento_csv.py
 # Validación, limpieza y tratamiento inicial de las columnas básicas del dataset.
@@ -10,6 +11,7 @@ SEMILLA_ALEATORIEDAD = 42  ##comentario semilla fija para cualquier proceso alea
 
 
 def validar_datos(df):
+    """Aplica coerción de tipos, validación de dominio y conversión de fechas sobre un Dask DataFrame."""
     log("===== VALIDACIÓN, COERCIÓN Y REGLAS DE DOMINIO =====")  ##comentario inicio de los controles de calidad de datos
 
     columnas_numericas = [
@@ -58,6 +60,7 @@ def validar_datos(df):
 
 
 def _log_nulos_por_grupo(df, columnas, titulo):
+    """Registra, por grupo de columnas, el número y porcentaje de nulos presentes."""
     presentes = []  ##comentario columnas que existen en el DataFrame
     for col in columnas:
         if col in df.columns:
@@ -78,6 +81,7 @@ def _log_nulos_por_grupo(df, columnas, titulo):
 
 
 def busca_nulos(df):
+    """Resume los valores faltantes de las columnas básicas del dataset en el log."""
     log("===== ANÁLISIS DE VALORES FALTANTES =====")  ##comentario inicio del análisis de ausencias
 
     _log_nulos_por_grupo(df, [
@@ -96,8 +100,9 @@ def busca_nulos(df):
 
 
 def analizar_mecanismo_missingness(df):
+    """Evalúa si los nulos parecen estar asociados a otras variables para estimar un mecanismo no MCAR."""
     log("===== ANÁLISIS DEL MECANISMO DE AUSENCIA (MCAR) =====")  ##comentario inicio de la validación MCAR aproximada
-    np.random.seed(SEMILLA_ALEATORIEDAD)  ##comentario fija la semilla para reproducibilidad
+    set_global_seed()  ##comentario fija la semilla global para reproducibilidad
 
     columnas_objetivo = [
         'PORCENTAJE DESCUENTO', 'FECHA NACIMIENTO', 'MONTO APLICADO',
@@ -137,6 +142,7 @@ def analizar_mecanismo_missingness(df):
 
 
 def detectar_outliers(df):
+    """Marca como nulos los valores extremos detectados por el criterio IQR."""
     log("===== DETECCIÓN DE OUTLIERS CON IQR =====")  ##comentario inicio de la detección de valores extremos
     columnas_numericas = [
         'SKU', 'UNIDADES', 'PORCENTAJE DESCUENTO',
@@ -181,8 +187,9 @@ def _mediana_aproximada(df, col):
 
 
 def limpiar_nulos(df):
+    """Aplica la estrategia de limpieza de nulos según el porcentaje de ausencias por columna."""
     log("===== PROCESANDO ESTRATEGIA DE LIMPIEZA ESTRATIFICADA DE VARIABLES BÁSICAS =====")  ##comentario inicio de la limpieza de nulos básicos
-    np.random.seed(SEMILLA_ALEATORIEDAD)  ##comentario fija la semilla para garantizar reproducibilidad
+    set_global_seed()  ##comentario fija la semilla global para garantizar reproducibilidad
 
     df = detectar_outliers(df)  ##comentario identifica y marca valores extremos antes de limpiar nulos
     df = analizar_mecanismo_missingness(df)  ##comentario examina si los nulos parecen MCAR

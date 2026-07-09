@@ -8,6 +8,7 @@ from utiles.logger import log  ##comentario importa la función de logging del p
 
 
 def cargar_datos_paralelo(ruta_archivo):
+    """Carga un CSV grande con Dask DataFrame de forma perezosa y distribuida."""
     log("===== CARGA DEL CSV CON DASK =====")  ##comentario indica el inicio del proceso de carga
     try:
         print("Inicializando lectura perezosa con Dask...")  ##comentario muestra mensaje en consola

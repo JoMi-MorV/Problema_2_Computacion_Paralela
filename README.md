@@ -1,110 +1,125 @@
-# Pipeline de Preprocesamiento con Dask
+# Pipeline de procesamiento y EDA para ventas
 
-Proyecto de preprocesamiento orientado a cargar, validar y limpiar datos de ventas utilizando Dask para reducir la presión sobre la memoria RAM.
+Este proyecto orquesta la carga, validación, limpieza y análisis exploratorio de un archivo CSV de ventas usando Dask, pandas y matplotlib. La idea central es mantener el uso de memoria controlado, especialmente durante la etapa de EDA, evitando materializar datasets completos en memoria.
 
----
+## Qué hace el pipeline
 
-## Instalar
+El flujo actual incluye estas etapas:
 
-Para preparar el entorno e instalar las dependencias necesarias en Ubuntu 24.04, ejecuta:
+1. Carga del archivo CSV con Dask.
+2. Validación y coerción de tipos de las columnas base.
+3. Diagnóstico inicial de tipos, nulos y duplicados.
+4. Limpieza y tratamiento de variables básicas.
+5. Generación de variables derivadas.
+6. Validación y limpieza de las variables derivadas.
+7. Normalización de variables relevantes para análisis posteriores.
+8. EDA con estadísticas, gráficos y pruebas de asociación.
+
+## Estructura del proyecto
+
+```text
+proyecto/
+├── data/
+│   ├── ventas_completas.csv
+│   └── ventas_prueba.csv
+├── output/
+│   ├── analysis/
+│   ├── diagnostico/
+│   ├── graficos/
+│   └── preprocesamiento/
+├── src/
+│   ├── T1_preprocesamiento/
+│   │   ├── F1_carga_csv.py
+│   │   ├── F2_tratamiento_csv.py
+│   │   ├── F3_transformacion_datos_csv.py
+│   │   └── F4_tratamiento_variables_deducidas.py
+│   ├── T2_analisis/
+│   │   ├── F1_analisis_basico.py
+│   │   ├── F2_analisis_deducidas.py
+│   │   ├── F3_normalidad.py
+│   │   ├── F4_correlaciones.py
+│   │   ├── F5_asociacion.py
+│   │   └── F6_anova.py
+│   └── T3_inferencia/
+├── utiles/
+│   ├── eda_memoria.py
+│   ├── logger.py
+│   └── semilla.py
+├── main.py
+└── README.md
+```
+
+## Requisitos
+
+Se recomienda usar Python 3.10+ y las siguientes dependencias:
+
+```bash
+pip install dask[dataframe] pandas numpy matplotlib scipy statsmodels
+```
+
+En entornos Ubuntu, también puede ser necesario instalar:
 
 ```bash
 sudo apt update
-sudo apt install python3-pip
-sudo apt install python3-matplotlib
-pip install --upgrade dask[dataframe] pandas --break-system-packages
+sudo apt install python3-pip python3-matplotlib
 ```
 
-## Estructura
-proyecto/
-├─ data/
-│  └── ventas_completas.csv
-│
-├── src/
-│  ├── T1_preprocesamiento/
-│  │    ├── F1_carga_csv.py
-│  │    ├── F2_tratamiento_csv.py
-│  │    ├── F3_transformacion_datos_csv.py
-│  │    └── F4_tratamiento_variables_deducidas.py
-│ 
-├── utiles/
-│  └── logger.py
-│
-├── main.py
-└── README.md
+## Ejecución
 
-## Arquitectura del Sistema
+Ejecuta el pipeline indicando la ruta al CSV de entrada:
 
-### 1. `F1_carga_csv.py` (Módulo de Ingesta)
+```bash
+python3 main.py data/ventas_completas.csv
+```
 
-Este módulo constituye la puerta de entrada del conjunto de datos. Se encarga de cargar el CSV utilizando **Dask DataFrame**, que construye un grafo de tareas en lugar de materializar todo el dataset en memoria. La lectura es perezosa y se divide en particiones lógicas mediante `blocksize`, lo que mejora la eficiencia del uso de RAM.
+El pipeline crea los resultados en la carpeta output/.
 
-#### Responsabilidades
+## Módulos principales
 
-- Leer archivos CSV grandes con Dask.
-- Mantener la carga mínima en memoria hasta que se requieran resultados.
-- Construir un DataFrame distribuido con particiones independientes.
-- Detectar y reportar errores de lectura.
+### main.py
+Orquesta todo el flujo. Inicia la carga, aplica cada etapa de preprocesamiento y luego ejecuta el EDA.
 
-### 2. `F2_tratamiento_csv.py` (Validación y limpieza inicial)
+### src/T1_preprocesamiento/F1_carga_csv.py
+Carga el CSV de forma perezosa con Dask para evitar cargar el dataset completo en memoria.
 
-Este módulo aplica transformación y validación a las columnas básicas del dataset. Mantiene el DataFrame en Dask para conservar operaciones perezosas y reducir el uso de memoria.
+### src/T1_preprocesamiento/F2_tratamiento_csv.py
+Valida tipos, domina rangos, detecta UUIDs inválidos, convierte fechas y analiza nulos/outliers en columnas básicas.
 
-#### Responsabilidades
+### src/T1_preprocesamiento/F3_transformacion_datos_csv.py
+Genera variables derivadas como monto por unidad, edad, hora, frecuencia, recencia, fin de semana y segmento de monto.
 
-- Coercer columnas numéricas a tipos adecuados.
-- Validar dominio de `PORCENTAJE DESCUENTO` y `GENERO`.
-- Validar el formato UUID de `CODIGO CLIENTE`.
-- Convertir fechas y validar formatos.
-- Analizar valores nulos en grupos de columnas.
-- Limpiar nulos según umbrales: eliminación, imputación o descarte de columna.
+### src/T1_preprocesamiento/F4_tratamiento_variables_deducidas.py
+Valida, limpia y normaliza las variables derivadas, además de guardar los parámetros de normalización en JSON.
 
-### 3. `F3_transformacion_datos_csv.py` (Variables deducidas)
+### src/T2_analisis/F1_analisis_basico.py
+Produce estadísticas descriptivas, tablas de frecuencia y gráficos para variables básicas.
 
-Este módulo genera nuevas variables derivadas del dataset original, preservando el paralelismo de Dask.
+### src/T2_analisis/F2_analisis_deducidas.py
+Produce estadísticas y gráficos para variables deducidas.
 
-#### Responsabilidades
+### src/T2_analisis/F3_normalidad.py
+Ejecuta pruebas de normalidad sobre muestras acotadas y guarda QQ plots.
 
-- Calcular `MONTO_POR_UNIDAD`.
-- Extraer `EDAD` y `HORA_TRANSACCION` de fechas.
-- Calcular `FRECUENCIA_COMPRA` con `groupby()` y `merge()`.
-- Calcular `RECENCIA`, `MONTO_BRUTO` y `ES_FIN_DE_SEMANA`.
-- Segmentar `MONTO APLICADO` en `SEGMENTO_MONTO`.
+### src/T2_analisis/F4_correlaciones.py
+Calcula correlaciones numéricas y guarda un heatmap de correlación.
 
-### 4. `F4_tratamiento_variables_deducidas.py` (Validación, limpieza y normalización de variables derivadas)
+### src/T2_analisis/F5_asociacion.py
+Calcula chi-cuadrado y Cramér's V para asociaciones categóricas y genera gráficos de contingencia simples.
 
-Este módulo valida, limpia y normaliza las columnas generadas en `F3`, manteniendo el uso eficiente de memoria con Dask.
+### src/T2_analisis/F6_anova.py
+Ejecuta ANOVA sobre montos por factores categóricos y, cuando está disponible, Tukey.
 
-#### Responsabilidades
+## Salidas generadas
 
-- Coercer variables numéricas derivadas.
-- Aplicar reglas de dominio para `EDAD`, `MONTO_BRUTO` y `FRECUENCIA_COMPRA`.
-- Validar valores booleanos y categorías esperadas.
-- Medir y limpiar nulos en las columnas derivadas.
-- Normalizar variables derivadas relevantes para análisis posteriores.
+El pipeline deja resultados en estas rutas:
 
-#### Normalización
+- output/diagnostico/: tipos de columna, nulos, duplicados y estadísticas básicas.
+- output/preprocesamiento/deducidas/: resumen de variables derivadas.
+- output/preprocesamiento/modelos/parametros_normalizacion.json: parámetros usados durante la normalización.
+- output/analysis/: CSV con estadísticas, correlaciones, normalidad, asociación y ANOVA.
+- output/graficos/: gráficos de EDA, normalidad, correlaciones, asociación y ANOVA.
 
-- Se utiliza una estandarización tipo `StandardScaler`.
-- Cada variable derivada se transforma con `(valor - media) / desviación_estándar`.
-- Se documentan los parámetros de normalización: media y desviación estándar.
+## Notas de memoria
 
-### 5. `main.py` (Orquestador del pipeline)
+Para evitar que el EDA consuma demasiada RAM, el proyecto trabaja sobre muestras acotadas en memoria mediante [utiles/eda_memoria.py](utiles/eda_memoria.py). Esto permite mantener el análisis útil incluso con archivos grandes.
 
-Este script ahora ejecuta el flujo completo con análisis antes y después de cada limpieza:
-
-1. Cargar el CSV con Dask.
-2. Validar los datos básicos.
-3. Auditoría de nulos básicos.
-4. Limpieza de variables básicas.
-5. Generar variables deducidas.
-6. Validar variables deducidas.
-7. Auditoría de nulos en variables deducidas.
-8. Limpieza de variables deducidas.
-
-#### Responsabilidades
-
-- Validar la existencia del archivo de entrada.
-- Ejecutar cada fase del pipeline secuencialmente.
-- Guardar resultados de análisis y gráficos en carpetas de salida.
-- Facilitar un flujo reproducible de inspección, limpieza y reanálisis.

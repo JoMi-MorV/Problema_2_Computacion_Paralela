@@ -6,6 +6,7 @@ import numpy as np  ##comentario importa Numpy para operaciones numéricas
 
 
 def crear_variables_deducidas(df):
+    """Genera variables derivadas como monto por unidad, edad, hora, frecuencia, recencia y segmento."""
     df = df.reset_index(drop=True)  ##comentario restablece el índice para que sea único y continuo
 
     if 'MONTO APLICADO' in df.columns and 'UNIDADES' in df.columns:
