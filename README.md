@@ -2,6 +2,8 @@
 
 Este proyecto orquesta la carga, validación, limpieza y análisis exploratorio de un archivo CSV de ventas usando Dask, pandas y matplotlib. La idea central es mantener el uso de memoria controlado, especialmente durante la etapa de EDA, evitando materializar datasets completos en memoria.
 
+## El archivo ventas_completas.csv debe ser cargado manualmente a la carpeta data (cuando se descarga el código no viene con el archivo.csv)
+
 ## Qué hace el pipeline
 
 El flujo actual incluye estas etapas:
