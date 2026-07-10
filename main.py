@@ -36,12 +36,15 @@ from utiles.semilla import set_global_seed
 
 
 if len(sys.argv) < 2:
-    log("Uso: python3 main.py <data/ventas_completas.csv>")
+    log("Uso: python3 main.py data/ventas_completas.csv")
+    log("Ejecuta este comando desde la carpeta que contiene main.py.")
     sys.exit(1)
 
 archivo_csv = sys.argv[1]
 if not os.path.exists(archivo_csv):
     log(f"Error: El archivo '{archivo_csv}' no existe.")
+    log("Ejemplo de ejecución correcta: python3 main.py data/ventas_completas.csv")
+    log("Asegúrate de ejecutar el comando desde la carpeta que contiene main.py.")
     sys.exit(1)
 
 seed = set_global_seed()
