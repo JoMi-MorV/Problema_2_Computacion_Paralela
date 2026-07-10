@@ -2,6 +2,9 @@
 
 Este proyecto orquesta la carga, validación, limpieza y análisis exploratorio de un archivo CSV de ventas usando Dask, pandas y matplotlib. La idea central es mantener el uso de memoria controlado, especialmente durante la etapa de EDA, evitando materializar datasets completos en memoria.
 
+## Observación
+Actualmente la ejecución tarda 30 a 40 minutos en completar, no se logró detectar la causa de este problema.
+
 ## Requisitos previos
 
 El archivo `data/ventas_completas.csv` debe estar presente en la carpeta `data/` antes de ejecutar el pipeline. En este repositorio ya se incluye ese archivo.
