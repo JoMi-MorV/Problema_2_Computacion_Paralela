@@ -18,6 +18,7 @@ El flujo actual incluye estas etapas:
 6. Validación y limpieza de las variables derivadas.
 7. Normalización de variables derivadas.
 8. EDA con estadísticas, gráficos y pruebas de asociación.
+9. Modelado descriptivo mediante clustering K-Means para segmentar clientes por perfil de consumo.
 
 ## Estructura del proyecto
 
@@ -39,6 +40,8 @@ Problema_2_Computacion_Paralela-main/
 │   │   ├── F4_correlaciones.py
 │   │   ├── F5_asociacion.py
 │   │   └── F6_anova.py
+│   ├── T3_inferencia/
+│   │   └── F1_modelado_clustering.py
 ├── utiles/
 │   ├── eda_memoria.py
 │   ├── logger.py
@@ -50,16 +53,12 @@ Problema_2_Computacion_Paralela-main/
 ## Dependencias
 
 Se recomienda usar Python 3.10+ y las siguientes dependencias:
-
-```bash
-pip install dask[dataframe] pandas numpy matplotlib scipy statsmodels
-```
-
-En entornos Ubuntu, también puede ser necesario instalar:
-
 ```bash
 sudo apt update
-sudo apt install python3-pip python3-matplotlib
+sudo apt install python3-pip
+sudo apt install python3-matplotlib
+pip install --upgrade dask[dataframe] pandas --break-system-packages
+pip install scikit-learn --break-system-packages
 ```
 
 ## Ejecución
@@ -116,6 +115,9 @@ Calcula chi-cuadrado y Cramér's V para asociaciones categóricas y genera gráf
 ### src/T2_analisis/F6_anova.py
 Ejecuta ANOVA sobre montos por factores categóricos y, cuando está disponible, prueba de Tukey.
 
+### src/T3_inferencia/F1_modelado_clustering.py
+Implementa el modelado descriptivo con clustering K-Means sobre clientes. Agrupa las transacciones por `CODIGO CLIENTE`, calcula indicadores agregados y genera resultados, métricas, interpretaciones y gráficos en `output/modelado/clustering/` y `output/graficos/modelado/`.
+
 ## Salidas generadas
 
 El pipeline deja resultados en estas rutas:
@@ -124,6 +126,8 @@ El pipeline deja resultados en estas rutas:
 - `output/preprocesamiento/deducidas/`: resumen de variables deducidas.
 - `output/preprocesamiento/modelos/`: parámetros usados durante la normalización.
 - `output/analysis/`: CSVs con estadísticas, correlaciones, normalidad, asociación y ANOVA.
+- `output/modelado/clustering/`: resultados de clustering, métricas, resumen y análisis de perfiles de cliente.
+- `output/graficos/modelado/`: gráficos del método del codo y visualizaciones del clustering.
 - `output/graficos/`: gráficos de EDA, normalidad, correlaciones, asociación y ANOVA.
 - `output/log.txt`: registro de ejecución.
 

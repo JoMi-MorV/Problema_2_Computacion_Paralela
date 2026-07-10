@@ -27,6 +27,7 @@ from src.T2_analisis.F3_normalidad import normalidad
 from src.T2_analisis.F4_correlaciones import correlaciones
 from src.T2_analisis.F5_asociacion import asociacion
 from src.T2_analisis.F6_anova import anova
+from src.T3_inferencia.F1_modelado_clustering import modelado_descriptivo_clustering
 import pandas as pd
 import time
 from utiles.semilla import set_global_seed
@@ -196,5 +197,17 @@ try:
 except Exception as e:
     log(f"ANOVA (EDA) falló: {e}")
 log(f"ETAPA 9 completada. Tiempo total EDA: {time.time() - start:.2f}s")
+
+# --------------------------------------------------
+# ETAPA 10 — MODELADO DESCRIPTIVO (CLUSTERING)
+# --------------------------------------------------
+start = time.time()
+try:
+    modelado_descriptivo_clustering(df, seed=seed)
+except Exception as e:
+    log(f"ETAPA 10 falló: {e}")
+    log("El pipeline continuó, pero el modelado descriptivo no se pudo completar.")
+else:
+    log(f"ETAPA 10 completada. Tiempo: {time.time() - start:.2f}s")
 
 log("Pipeline completo. Todos los outputs están en la carpeta output/.")
