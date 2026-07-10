@@ -7,6 +7,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from scipy import stats
+from pandas.api import types as ptypes
 from utiles.logger import log
 from utiles.semilla import get_seed
 from utiles.eda_memoria import obtener_muestra_pandas
@@ -24,6 +25,17 @@ def _crear_directorio(ruta):
 
 def _get_max_workers():
     return max(1, min(2, os.cpu_count() or 1))
+
+
+def _es_columna_temporal(df, col):
+    if col not in df.columns:
+        return False
+    dtype = df[col].dtype
+    return (
+        ptypes.is_datetime64_any_dtype(dtype)
+        or ptypes.is_timedelta64_dtype(dtype)
+        or ptypes.is_period_dtype(dtype)
+    )
 
 
 def _obtener_muestra_tabla(df, cols, max_n=10000, seed=None):
@@ -120,7 +132,10 @@ def anova(df, etiqueta, output_base="output/analysis/anova"):
     ruta_graficos = os.path.join('output', 'graficos', 'anova', etiqueta)
     _crear_directorio(ruta_graficos)
 
-    factores = ['CANAL', 'LOCAL']
+    factores = [
+        factor for factor in ['CANAL', 'LOCAL']
+        if factor in df.columns and not _es_columna_temporal(df, factor)
+    ]
     registros = []
     tukey_all = []
 

@@ -8,6 +8,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from scipy import stats
+from pandas.api import types as ptypes
 from utiles.logger import log
 from utiles.semilla import get_seed
 from utiles.eda_memoria import obtener_muestra_pandas
@@ -28,8 +29,24 @@ def _sanitizar_nombre(nombre):
     return re.sub(r'[^A-Za-z0-9_]+', '_', nombre)
 
 
+def _es_columna_temporal(df, col):
+    if col not in df.columns:
+        return False
+    dtype = df[col].dtype
+    return (
+        ptypes.is_datetime64_any_dtype(dtype)
+        or ptypes.is_timedelta64_dtype(dtype)
+        or ptypes.is_period_dtype(dtype)
+    )
+
+
 def _columnas_numericas(df):
-    return [col for col in df.columns if getattr(df[col].dtype, 'kind', '') in 'iufc']
+    return [
+        col for col in df.columns
+        if col not in {'SKU', 'LOCAL', 'BOLETA', 'GENERO'}
+        and not _es_columna_temporal(df, col)
+        and getattr(df[col].dtype, 'kind', '') in 'iufc'
+    ]
 
 
 def _obtener_muestra_pandas(serie, max_n=5000, seed=None):

@@ -7,6 +7,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from scipy import stats
+from pandas.api import types as ptypes
 from utiles.logger import log
 from utiles.semilla import get_seed
 from utiles.eda_memoria import obtener_muestra_pandas
@@ -19,7 +20,11 @@ NUMERICAS_BASICAS = [
     'SKU', 'UNIDADES', 'PORCENTAJE DESCUENTO',
     'MONTO APLICADO', 'BOLETA', 'LOCAL', 'GENERO'
 ]
-CATEGORICAS_BASICAS = ['CANAL', 'PRODUCTO', 'CODIGO CLIENTE', 'RUN CLIENTE']
+CATEGORICAS_BASICAS = [
+    'CANAL', 'PRODUCTO', 'CODIGO CLIENTE', 'RUN CLIENTE',
+    'SKU', 'LOCAL', 'BOLETA', 'GENERO'
+]
+IDENTIFICADORES_CATEGORICOS = {'SKU', 'LOCAL', 'BOLETA', 'GENERO'}
 
 
 def _crear_directorio(ruta):
@@ -47,8 +52,29 @@ def _obtener_muestra(df, cols, sample_frac=0.01, max_rows=20000, seed=None):
     return obtener_muestra_pandas(datos, max_rows=max_rows, seed=seed)
 
 
+def _es_columna_temporal(df, col):
+    if col not in df.columns:
+        return False
+    dtype = df[col].dtype
+    return (
+        ptypes.is_datetime64_any_dtype(dtype)
+        or ptypes.is_timedelta64_dtype(dtype)
+        or ptypes.is_period_dtype(dtype)
+    )
+
+
 def _columnas_numericas(df, columnas):
-    return [col for col in columnas if col in df.columns and getattr(df[col].dtype, 'kind', '') in 'iufc']
+    return [
+        col for col in columnas
+        if col in df.columns
+        and col not in IDENTIFICADORES_CATEGORICOS
+        and not _es_columna_temporal(df, col)
+        and getattr(df[col].dtype, 'kind', '') in 'iufc'
+    ]
+
+
+def _maybe_compute(valor):
+    return valor.compute() if hasattr(valor, 'compute') else valor
 
 
 def _calcular_estadisticas_completas(df, columnas):
@@ -67,7 +93,14 @@ def _calcular_estadisticas_completas(df, columnas):
         mean, std, var, min_val, max_val, skew, kurt = dask.compute(
             mean, std, var, min_val, max_val, skew, kurt
         )
-        q = q.compute()
+        q = _maybe_compute(q)
+        mean = _maybe_compute(mean)
+        std = _maybe_compute(std)
+        var = _maybe_compute(var)
+        min_val = _maybe_compute(min_val)
+        max_val = _maybe_compute(max_val)
+        skew = _maybe_compute(skew)
+        kurt = _maybe_compute(kurt)
         q1 = q.loc[0.25] if 0.25 in q.index else np.nan
         median = q.loc[0.5] if 0.5 in q.index else np.nan
         q3 = q.loc[0.75] if 0.75 in q.index else np.nan
@@ -162,6 +195,32 @@ def _guardar_graficos_descriptivos(df, columnas, etiqueta):
             log(f"No se pudo generar QQ plot para {col}")
 
 
+def _guardar_grafico_frecuencias(df, col, ruta_salida, etiqueta):
+    ruta_graficos = os.path.join('output', 'graficos', 'basic', etiqueta)
+    os.makedirs(ruta_graficos, exist_ok=True)
+    muestra_col = _obtener_muestra(df[[col]], [col], max_rows=50000)
+    serie = muestra_col[col].dropna()
+    if serie.empty:
+        return None
+    if _es_columna_temporal(df, col) and hasattr(serie.dt, 'normalize'):
+        conteo = serie.dt.normalize().value_counts().head(20)
+    else:
+        conteo = serie.value_counts(dropna=False).head(20)
+    if conteo.empty:
+        return None
+    plt.figure(figsize=(8, 5))
+    conteo.plot(kind='bar', color='tab:blue', alpha=0.7)
+    plt.title(f'Frecuencia de {col}')
+    plt.xlabel(col)
+    plt.ylabel('Frecuencia')
+    plt.tight_layout()
+    nombre = f"{etiqueta}_{_sanitizar_nombre(col)}_frecuencia.png"
+    ruta = os.path.join(ruta_graficos, nombre)
+    plt.savefig(ruta, dpi=150)
+    plt.close()
+    return ruta
+
+
 def analisis_basico(df, etiqueta, output_base="output/analysis/basic"):
     """Genera estadísticas, tablas de frecuencia y gráficos para las variables básicas."""
     ruta_salida = os.path.join(output_base, etiqueta)
@@ -169,7 +228,9 @@ def analisis_basico(df, etiqueta, output_base="output/analysis/basic"):
     log(f"Iniciando análisis de variables básicas: {etiqueta}")
 
     columnas_numericas = [col for col in NUMERICAS_BASICAS if col in df.columns]
+    columnas_temporales = [col for col in df.columns if _es_columna_temporal(df, col)]
     columnas_categoricas = [col for col in CATEGORICAS_BASICAS if col in df.columns]
+    columnas_categoricas.extend(col for col in columnas_temporales if col not in columnas_categoricas)
     columnas_numericas_validas = _columnas_numericas(df, columnas_numericas)
 
     estadisticas = None
@@ -197,6 +258,9 @@ def analisis_basico(df, etiqueta, output_base="output/analysis/basic"):
         ruta_frecuencia = os.path.join(ruta_salida, f"tabla_frecuencias_{col}.csv")
         _guardar_csv(conteo, ruta_frecuencia)
         log(f"Tabla de frecuencias guardada: {ruta_frecuencia}")
+        ruta_grafico = _guardar_grafico_frecuencias(df, col, ruta_salida, etiqueta)
+        if ruta_grafico:
+            log(f"Gráfico de frecuencia guardado: {ruta_grafico}")
 
     if columnas_numericas_validas:
         try:

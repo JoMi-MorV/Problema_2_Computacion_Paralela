@@ -8,6 +8,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from scipy import stats
+from pandas.api import types as ptypes
 from utiles.logger import log
 from utiles.semilla import get_seed
 from utiles.eda_memoria import obtener_muestra_pandas
@@ -26,6 +27,17 @@ def _get_max_workers():
 
 def _sanitizar_nombre(nombre):
     return re.sub(r'[^A-Za-z0-9_]+', '_', nombre)
+
+
+def _es_columna_temporal(df, col):
+    if col not in df.columns:
+        return False
+    dtype = df[col].dtype
+    return (
+        ptypes.is_datetime64_any_dtype(dtype)
+        or ptypes.is_timedelta64_dtype(dtype)
+        or ptypes.is_period_dtype(dtype)
+    )
 
 
 def _obtener_muestra_pandas(serie, max_n=10000, seed=None):
@@ -201,6 +213,12 @@ def asociacion(df, etiqueta, output_base="output/analysis/asociacion"):
         ('CANAL', 'GENERO'),
         ('SEGMENTO_MONTO', 'GENERO'),
         ('ES_FIN_DE_SEMANA', 'CANAL')
+    ]
+    pares = [
+        par for par in pares
+        if par[0] in df.columns and par[1] in df.columns
+        and not _es_columna_temporal(df, par[0])
+        and not _es_columna_temporal(df, par[1])
     ]
 
     chi2_records = []

@@ -48,8 +48,24 @@ def _obtener_muestra(df, cols, sample_frac=0.01, max_rows=20000, seed=None):
     return obtener_muestra_pandas(datos, max_rows=max_rows, seed=seed)
 
 
+def _es_columna_temporal(df, col):
+    if col not in df.columns:
+        return False
+    dtype = df[col].dtype
+    return (
+        ptypes.is_datetime64_any_dtype(dtype)
+        or ptypes.is_timedelta64_dtype(dtype)
+        or ptypes.is_period_dtype(dtype)
+    )
+
+
 def _columnas_numericas(df, columnas):
-    return [col for col in columnas if col in df.columns and getattr(df[col].dtype, 'kind', '') in 'iufc']
+    return [
+        col for col in columnas
+        if col in df.columns
+        and not _es_columna_temporal(df, col)
+        and getattr(df[col].dtype, 'kind', '') in 'iufc'
+    ]
 
 
 def _calcular_estadisticas_completas(df, columnas):
