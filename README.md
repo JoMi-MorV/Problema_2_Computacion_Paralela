@@ -7,7 +7,7 @@ Actualmente la ejecución tarda 30 a 40 minutos en completar, no se logró detec
 
 ## Requisitos previos
 
-El archivo `data/ventas_completas.csv` debe estar presente en la carpeta `data/` antes de ejecutar el pipeline. En este repositorio ya se incluye ese archivo.
+El archivo `data/ventas_completas.csv` debe estar presente en la carpeta `data/` antes de ejecutar el pipeline. En este repositorio no se incluye ese archivo.
 
 ## Qué hace el pipeline
 
